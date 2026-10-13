@@ -30,7 +30,7 @@ This is a pilot foundation, not every product feature in the full specification.
 2. Create a Supabase project at [database.new](https://database.new).
 3. Copy `.env.example` to `.env.local` and set `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` from that project’s API settings. Do not add a service role key to the browser or commit it.
 4. Apply migrations in order using the Supabase CLI (`supabase link --project-ref <ref>` then `supabase db push`) or the SQL editor. Keep development and production projects separate. Do not run migrations against production until you have reviewed the SQL and confirmed the linked project.
-5. In Supabase Auth URL settings, set the local site URL to `http://localhost:3000` and allow `http://localhost:3000/auth/confirm`. Add the production domain and confirmation URL in the production project.
+5. In Supabase Auth URL settings, use `http://localhost:3000` as the local site URL and allow `http://localhost:3000/**`. For production, set the Site URL to `https://coastpilot.vercel.app`, allow `https://coastpilot.vercel.app/**`, and set Vercel's `NEXT_PUBLIC_SITE_URL` to `https://coastpilot.vercel.app`. This allowlist covers confirmation and password recovery callbacks. Keep localhost allowlisted for development.
 6. Run:
 
    ```bash
@@ -84,6 +84,7 @@ Migration 0001 creates a private `project-evidence` bucket, limited to images an
 | --- | --- | --- |
 | `NEXT_PUBLIC_SUPABASE_URL` | Supabase project URL | Yes |
 | `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` | Supabase publishable/legacy anon key | Yes; safe only with RLS |
+| `NEXT_PUBLIC_SITE_URL` | Canonical app origin for email redirects (local default: `http://localhost:3000`; production: `https://coastpilot.vercel.app`) | Yes |
 
 Service-role keys, database passwords, signing secrets, and access tokens must remain in trusted operator tooling and must never be committed or placed in `NEXT_PUBLIC_*` variables. `.env` and `.env*.local` are ignored by Git.
 
