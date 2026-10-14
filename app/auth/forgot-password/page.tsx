@@ -1,12 +1,13 @@
 import { ForgotPasswordForm } from "@/components/forgot-password-form";
 import Link from "next/link";
-import { ArrowLeft, Check, Waves } from "lucide-react";
+import { Check } from "lucide-react";
+import { CoastPilotLogoMark } from "@/components/coastpilot-logo-mark";
 
 export default function Page() {
   return (
     <main className="auth-page">
-      <Link href="/" className="auth-back"><ArrowLeft size={15}/> Back to CoastPilot</Link>
-      <Link href="/" className="auth-brand"><span className="brand-mark"><Waves size={19}/></span><span>coastpilot<span className="brand-period">.</span></span></Link>
+      
+      <Link href="/" className="auth-brand"><CoastPilotLogoMark/><span>coastpilot<span className="brand-period">.</span></span></Link>
       <div className="auth-layout">
         <section className="auth-story">
           <p className="eyebrow">ACCOUNT RECOVERY</p>

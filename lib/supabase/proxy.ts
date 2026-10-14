@@ -47,15 +47,53 @@ export async function updateSession(request: NextRequest) {
   const { data } = await supabase.auth.getClaims();
   const user = data?.claims;
 
+  if (user?.sub) {
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("platform_role,account_type")
+      .eq("id", user.sub)
+      .maybeSingle();
+    const path = request.nextUrl.pathname;
+    const isAdmin = profile?.platform_role === "admin";
+    const isPartner = profile?.account_type === "partner" && !isAdmin;
+    const isPotentialPartner = profile?.account_type === "potential_partner" && !isAdmin;
+    const dashboardPath = ["/dashboard", "/projects", "/teams", "/onboarding", "/organizations", "/challenges", "/problems/new"]
+      .some((prefix) => path === prefix || path.startsWith(`${prefix}/`));
+    const partnerAllowed = path === "/organizations" || path.startsWith("/organizations/")
+      || path === "/challenges" || path.startsWith("/challenges/")
+      || path === "/problems/new" || path.startsWith("/problems/new/");
+
+    if (isPotentialPartner && dashboardPath) {
+      const url = request.nextUrl.clone();
+      url.pathname = "/partnerships";
+      url.search = "";
+      const response = NextResponse.redirect(url);
+      supabaseResponse.cookies.getAll().forEach((cookie) => response.cookies.set(cookie));
+      return response;
+    }
+
+    if (isPartner && dashboardPath && !partnerAllowed) {
+      const url = request.nextUrl.clone();
+      url.pathname = "/organizations";
+      url.search = "";
+      const response = NextResponse.redirect(url);
+      supabaseResponse.cookies.getAll().forEach((cookie) => response.cookies.set(cookie));
+      return response;
+    }
+  }
+
   if (
     request.nextUrl.pathname !== "/" &&
     !user &&
     !request.nextUrl.pathname.startsWith("/login") &&
+    !request.nextUrl.pathname.startsWith("/partnerships") &&
     !request.nextUrl.pathname.startsWith("/auth")
   ) {
     // no user, potentially respond by redirecting the user to the login page
     const url = request.nextUrl.clone();
     url.pathname = "/auth/login";
+    url.search = "";
+    url.searchParams.set("next", `${request.nextUrl.pathname}${request.nextUrl.search}`);
     return NextResponse.redirect(url);
   }
 

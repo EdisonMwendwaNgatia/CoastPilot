@@ -1,5 +1,7 @@
 import Link from "next/link";
 import { ArrowRight, Compass, Lightbulb, MapPin, Waves } from "lucide-react";
+import { createClient } from "@/lib/supabase/server";
+import { CoastPilotLogoMark } from "@/components/coastpilot-logo-mark";
 
 const stages = [
   { number: "01", title: "Name the challenge", text: "Start with a problem people in your community experience every day." },
@@ -7,17 +9,17 @@ const stages = [
   { number: "03", title: "Test what works", text: "Make a small prototype, learn from real people, and record the evidence." },
 ];
 
-const sampleChallenges = [
-  { category: "Waste & recycling", title: "Making beach clean-ups part of the local economy", place: "Mombasa County", skills: "Community research · Product design" },
-  { category: "Fisheries & livelihoods", title: "Helping small-scale fishers reduce post-harvest loss", place: "Kilifi County", skills: "Food systems · Mobile technology" },
-  { category: "Climate adaptation", title: "Neighbourhood ideas for safer rainy seasons", place: "Kwale County", skills: "Mapping · Climate resilience" },
-];
-
-export default function Home() {
+export default async function Home() {
+  const supabase = await createClient();
+  const { data: challenges, error } = await supabase.from("challenges")
+    .select("id,title,slug,summary,required_skills,application_deadline,is_sponsored,sponsor_name,prize_type,cash_prize_amount,cash_prize_currency,tangible_prizes,organizations(name),problems(county,town,category)")
+    .eq("status", "published")
+    .order("published_at", { ascending: false })
+    .limit(3);
   return (
     <main>
       <header className="site-header">
-        <Link href="/" className="brand"><span className="brand-mark"><Waves size={21} /></span><span>coastpilot<span className="brand-period">.</span></span></Link>
+        <Link href="/" className="brand"><CoastPilotLogoMark/><span>coastpilot<span className="brand-period">.</span></span></Link>
         <nav className="desktop-nav" aria-label="Main navigation">
           <a href="#how-it-works">How it works</a><a href="#challenges">Challenges</a><a href="#partners">For organizations</a>
         </nav>
@@ -50,13 +52,12 @@ export default function Home() {
 
       <section className="section challenge-section" id="challenges">
         <div className="section-heading challenge-heading"><div><div className="eyebrow">A STARTING POINT FOR WHAT’S POSSIBLE</div><h2>Challenges worth<br />showing up for.</h2></div><p>Explore community priorities and find the one you want to help move forward.</p></div>
-        <div className="challenge-grid">{sampleChallenges.map((challenge) => <article className="challenge-card" key={challenge.title}><div className="challenge-top"><span className="challenge-icon"><Compass size={19} /></span><span className="sample-tag">SAMPLE CHALLENGE</span></div><div className="challenge-category">{challenge.category}</div><h3>{challenge.title}</h3><div className="challenge-place"><MapPin size={14} /> {challenge.place}</div><div className="challenge-skills">{challenge.skills}</div><a href="/auth/sign-up" className="challenge-link">Explore this challenge <ArrowRight size={15} /></a></article>)}</div>
-        <p className="sample-note">These examples are illustrative. Published community challenges will appear here as they are reviewed.</p>
+        {error ? <p className="challenge-empty-note">Published challenges are temporarily unavailable. Please try again soon.</p> : challenges?.length ? <div className="challenge-grid">{challenges.map((challenge) => { const place = challenge.problems as unknown as { county?:string|null; town?:string|null; category?:string|null } | null; const organization = challenge.organizations as unknown as { name:string } | null; const prizeLabel = challenge.prize_type === "none" ? "No prizes" : challenge.prize_type === "cash" ? `Cash · ${challenge.cash_prize_currency} ${Number(challenge.cash_prize_amount).toLocaleString()}` : challenge.prize_type === "tangible" ? "Tangible prizes" : `Cash + tangible · ${challenge.cash_prize_currency} ${Number(challenge.cash_prize_amount).toLocaleString()}`; return <article className="challenge-card" key={challenge.id}><div className="challenge-top"><span className="challenge-icon"><Compass size={19} /></span><span className={`sponsor-badge ${challenge.is_sponsored ? "sponsored" : "unsponsored"}`}>{challenge.is_sponsored ? `Sponsored${challenge.sponsor_name ? ` · ${challenge.sponsor_name}` : organization ? ` · ${organization.name}` : ""}` : "Not sponsored"}</span></div><div className="challenge-category">{place?.category ?? "COMMUNITY CHALLENGE"}</div><h3>{challenge.title}</h3><p className="landing-challenge-summary">{challenge.summary}</p><div className="challenge-place"><MapPin size={14} /> {[place?.town, place?.county].filter(Boolean).join(", ") || "Coastal Kenya"}</div><div className="landing-challenge-tags"><span className="prize-badge">{prizeLabel}</span>{challenge.required_skills?.slice(0, 3).map((skill:string) => <span className="landing-skill" key={skill}>{skill}</span>)}</div><small className="landing-deadline">{challenge.application_deadline ? `Apply by ${new Date(`${challenge.application_deadline}T00:00:00`).toLocaleDateString()}` : "Applications open"}</small><Link href="/auth/login?next=%2Fchallenges" className="challenge-link">Sign in to explore <ArrowRight size={15} /></Link></article>; })}</div> : <div className="landing-challenge-empty"><p>No published challenges just yet. New opportunities will appear here as soon as they’re ready.</p><Link href="/auth/login?next=%2Fchallenges" className="challenge-link">Sign in to browse challenges <ArrowRight size={15}/></Link></div>}
       </section>
 
-      <section className="partner-band" id="partners"><div className="partner-symbol"><Waves size={22} /></div><div><div className="eyebrow">FOR ORGANIZATIONS & COMMUNITY PARTNERS</div><h2>Back local talent.<br />See what it can do.</h2><p>Bring a community challenge to CoastPilot and work alongside young innovators to explore practical, testable solutions.</p></div><Link className="button button-light" href="/auth/sign-up">Explore a partnership <ArrowRight size={16} /></Link></section>
+      <section className="partner-band" id="partners"><div className="partner-symbol"><Waves size={22} /></div><div><div className="eyebrow">FOR ORGANIZATIONS & COMMUNITY PARTNERS</div><h2>Back local talent.<br />See what it can do.</h2><p>Bring a community challenge to CoastPilot, support young innovators, and explore a scoped real-world pilot together.</p></div><Link className="button button-light partner-cta" href="/partnerships"><span className="partner-cta-pulse" aria-hidden="true"/>Start a partnership conversation <ArrowRight size={16} /></Link></section>
 
-      <footer className="site-footer"><Link href="/" className="brand footer-brand"><span className="brand-mark"><Waves size={18} /></span><span>coastpilot<span className="brand-period">.</span></span></Link><p>From Coastal Problems to Tested Solutions.</p><div className="footer-links"><a href="#how-it-works">How it works</a><a href="#challenges">Challenges</a><a href="mailto:hello@coastpilot.org">Get in touch</a></div><span className="copyright">CoastPilot · Built for the coast.</span></footer>
+      <footer className="site-footer"><Link href="/" className="brand footer-brand"><CoastPilotLogoMark/><span>coastpilot<span className="brand-period">.</span></span></Link><p>From Coastal Problems to Tested Solutions.</p><div className="footer-links"><a href="#how-it-works">How it works</a><a href="#challenges">Challenges</a><a href="mailto:hello@coastpilot.org">Get in touch</a></div><Link href="/legal" className="footer-legal-link">Terms &amp; privacy</Link><span className="copyright">CoastPilot · Built for the coast.</span></footer>
     </main>
   );
 }

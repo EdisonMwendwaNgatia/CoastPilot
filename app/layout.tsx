@@ -10,6 +10,7 @@ export const metadata: Metadata = {
   metadataBase: new URL(defaultUrl),
   title: "CoastPilot — From Coastal Problems to Tested Solutions",
   description: "A youth innovation workspace for turning coastal community challenges into solutions young people can build and test.",
+  icons: { icon: "/images/logo120.png", apple: "/images/logo120.png" },
 };
 
 export default function RootLayout({

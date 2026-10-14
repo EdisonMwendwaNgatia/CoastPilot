@@ -3,6 +3,7 @@
 import { cn } from "@/lib/utils";
 import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/button";
+import { AuthProviderButtons } from "@/components/auth-provider-buttons";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -11,7 +12,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 
-export function SignUpForm({ className, ...props }: React.ComponentPropsWithoutRef<"div">) {
+export function SignUpForm({ next, className, ...props }: React.ComponentPropsWithoutRef<"div"> & { next?: string }) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [repeatPassword, setRepeatPassword] = useState("");
@@ -30,7 +31,8 @@ export function SignUpForm({ className, ...props }: React.ComponentPropsWithoutR
       return;
     }
     try {
-      const { error } = await supabase.auth.signUp({ email, password, options: { emailRedirectTo: `${window.location.origin}/protected` } });
+      const callback = next ? `/protected?next=${encodeURIComponent(next)}` : "/protected";
+      const { error } = await supabase.auth.signUp({ email, password, options: { emailRedirectTo: `${window.location.origin}${callback}` } });
       if (error) throw error;
       router.push("/auth/sign-up-success");
     } catch (error: unknown) {
@@ -48,6 +50,7 @@ export function SignUpForm({ className, ...props }: React.ComponentPropsWithoutR
         <CardDescription className="auth-card-description">Join young innovators building practical solutions with their communities.</CardDescription>
       </CardHeader>
       <CardContent className="auth-card-content">
+        <AuthProviderButtons next={next} defaultNext="/onboarding" />
         <form onSubmit={handleSignUp}>
           <div className="auth-fields">
             <div className="auth-field"><Label htmlFor="email">Email address</Label><div className="auth-input-wrap"><Mail size={16}/><Input id="email" type="email" placeholder="you@example.com" autoComplete="email" required value={email} onChange={(e) => setEmail(e.target.value)}/></div></div>
@@ -57,7 +60,7 @@ export function SignUpForm({ className, ...props }: React.ComponentPropsWithoutR
             <Button type="submit" className="auth-submit" disabled={isLoading}>{isLoading ? "Creating your account…" : <>Create free account <ArrowRight size={16}/></>}</Button>
             <p className="auth-terms">Youth participation on CoastPilot is free.</p>
           </div>
-          <div className="auth-switch">Already have an account? <Link href="/auth/login">Sign in</Link></div>
+          <div className="auth-switch">Already have an account? <Link href={next ? `/auth/login?next=${encodeURIComponent(next)}` : "/auth/login"}>Sign in</Link></div>
         </form>
       </CardContent>
     </Card>

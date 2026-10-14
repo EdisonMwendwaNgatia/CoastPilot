@@ -3,6 +3,7 @@
 import { cn } from "@/lib/utils";
 import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/button";
+import { AuthProviderButtons } from "@/components/auth-provider-buttons";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -11,7 +12,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 
-export function LoginForm({ className, ...props }: React.ComponentPropsWithoutRef<"div">) {
+export function LoginForm({ next, className, ...props }: React.ComponentPropsWithoutRef<"div"> & { next?: string }) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -26,7 +27,7 @@ export function LoginForm({ className, ...props }: React.ComponentPropsWithoutRe
     try {
       const { error } = await supabase.auth.signInWithPassword({ email, password });
       if (error) throw error;
-      router.push("/protected");
+      router.push(next || "/protected");
     } catch (error: unknown) {
       setError(error instanceof Error ? error.message : "An error occurred");
     } finally {
@@ -42,6 +43,7 @@ export function LoginForm({ className, ...props }: React.ComponentPropsWithoutRe
         <CardDescription className="auth-card-description">Pick up your work and see what’s moving in your community.</CardDescription>
       </CardHeader>
       <CardContent className="auth-card-content">
+        <AuthProviderButtons next={next} defaultNext="/dashboard" />
         <form onSubmit={handleLogin}>
           <div className="auth-fields">
             <div className="auth-field"><Label htmlFor="email">Email address</Label><div className="auth-input-wrap"><Mail size={16}/><Input id="email" type="email" placeholder="you@example.com" autoComplete="email" required value={email} onChange={(e) => setEmail(e.target.value)}/></div></div>
@@ -49,7 +51,7 @@ export function LoginForm({ className, ...props }: React.ComponentPropsWithoutRe
             {error && <p className="auth-error" role="alert">{error}</p>}
             <Button type="submit" className="auth-submit" disabled={isLoading}>{isLoading ? "Signing you in…" : <>Sign in <ArrowRight size={16}/></>}</Button>
           </div>
-          <div className="auth-switch">Don&apos;t have an account? <Link href="/auth/sign-up">Create an account</Link></div>
+          <div className="auth-switch">Don&apos;t have an account? <Link href={next ? `/auth/sign-up?next=${encodeURIComponent(next)}` : "/auth/sign-up"}>Create an account</Link></div>
         </form>
       </CardContent>
     </Card>
